@@ -12,6 +12,10 @@ const port = process.env.PORT || 3001;
 
 app.use(xss());
 
+app.get('/', (req, res) => {
+  res.send('Howdy')
+})
+
 app.get('/api/test', async (req, res) => {
   const dummy = {
     "command": "SELECT",
