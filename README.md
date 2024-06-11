@@ -13,3 +13,16 @@ Create a new web service with the following values:
   * Start Command: `node app.js`
 
 That's it! Your web service will be live on your Render URL as soon as the build finishes.
+
+ CREATE TABLE public.news (
+    //   id SERIAL PRIMARY KEY,
+    //   author varchar NULL,
+    //   title varchar NULL,
+    //   description varchar NULL,
+    //   url varchar NULL,
+    //   imageurl varchar NULL,
+    //   "content" varchar NULL,
+    //   "date" date NULL,
+    //   "source" varchar NULL
+    //   unique (author, title, date)
+    // );
