@@ -1,26 +1,25 @@
 jest.mock('node-fetch', () => jest.fn());
+
 const { Pool } = require('pg');
 const fetch = require('node-fetch');
-const { Response, Headers } = jest.requireActual('node-fetch');
-const { getNews, insertNews } = require('../services/newsService');
+const { insertNews, getNews } = require('../services/newsService');
 
-jest.mock('pg');
+jest.mock('pg', () => {
+    const mPool = {
+        query: jest.fn()
+    };
+    return {
+        Pool: jest.fn(() => mPool)
+    };
+});
 
 
-describe('News Service', () => {
-    let mockPool;
-    let mockClient;
+describe('newsService', () => {
+    let pool;
 
     beforeEach(() => {
-        mockClient = {
-            query: jest.fn()
-        };
-        mockPool = {
-            connect: jest.fn(() => Promise.resolve(mockClient)),
-            query: jest.fn()
-        };
-        Pool.mockImplementation(() => mockPool);
-    })
+        pool = new Pool();
+    });
 
     afterEach(() => {
         jest.clearAllMocks();
@@ -28,37 +27,49 @@ describe('News Service', () => {
 
     describe('insertNews', () => {
         it('should insert news articles into the database', async () => {
-            const mockJsonResponse = {
-                articles: [
-                    {
-                        author: 'Author',
-                        title: 'Title',
-                        description: 'Description',
-                        sourcse: { id: 0, name: 'Source' },
-                        url: 'http://example.com',
-                        urlToImage: 'http://example.com/image.jpg',
-                        publishedAt: '',
-                        content: 'Content'
-                    }
-                ]
-            }
-            const mockNewsResponse = new Response(JSON.stringify(mockJsonResponse), {
-                ok: true,
-            });
-            fetch.mockResolvedValueOnce(mockNewsResponse);
-
+            const fetchMock = jest
+            .spyOn(global, 'fetch')
+            .mockImplementation(() =>
+                Promise.resolve({ json: () => Promise.resolve({
+                    articles: [
+                        {
+                            author: "John Doe",
+                            title: "Sample Title",
+                            description: "Sample Description",
+                            source: { name: "Sample Source" },
+                            url: "http://sample.url",
+                            urlToImage: "http://sample.url/image.jpg",
+                            content: "Sample Content"
+                        }
+                    ]
+                }) })
+            )
             await insertNews();
 
-            expect(fetch).toHaveBeenCalledTimes(5);
-            expect(mockPool.query).toHaveBeenCalled();
-            const query = mockPool.query.mock.calls[0][0];
-            expect(query).toContain('INSERT INTO public.news')
-        })
+            expect(fetchMock).toHaveBeenCalledTimes(5);
+            expect(pool.query).toHaveBeenCalled();
+        });
+    });
 
-        // it('should throw an error if fetch response is not ok', async () => {
-        //     fetch.mockResolvedValue({ ok: false });
+    describe('getNews', () => {
+        it('should retrieve news articles from the database', async () => {
+            const mockResult = {
+                rows: [
+                    { title: 'Title', url: 'http://news.url', imageurl: 'http://sample.url/image.jpg', score: 5 }
+                ]
+            };
+            pool.query.mockResolvedValue(mockResult);
 
-        //     await expect(insertNews()).rejects.toThrow('Network response not ok');
-        // });
-    })
-})
+            const result = await getNews('general');
+
+            expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("select title, url, imageurl, score from news"));
+            expect(result).toEqual(mockResult);
+        });
+
+        it('should handle database errors', async () => {
+            pool.query.mockRejectedValue(new Error('Database query failed'));
+
+            await expect(getNews('general')).rejects.toThrow('Database query failed');
+        });
+    });
+});

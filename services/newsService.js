@@ -18,6 +18,10 @@ const insertNews = async () => {
         // throw new Error('Network response not ok');
         // }
         const data = await response.json();
+        if (!data.articles || !Array.isArray(data.articles)) {
+            console.error(`No articles found for category ${categories[i]}`);
+            continue;
+        }
         const values = data.articles.map(item => {
         const newsObject = {
             author: sanitizer(item.author) || '',
@@ -43,7 +47,6 @@ const getNews = async (category) => {
     const currentDate = new Date().toISOString().split('T')[0];
     const sqlGet = `select title, url, imageurl, score from news left join scores on news.id = scores.news_id
     where category = '${category}' and date = '${currentDate}'`;
-    console.log('sql', sqlGet)
     const result = await pool.query(sqlGet);
     return result;
 }
