@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require("express");
 const fetch = require("node-fetch");
 const { xss } = require('express-xss-sanitizer');
+const promMid = require('express-prometheus-middleware');
+
 
 const sentimentAnalysisService = require('./services/sentimentAnalysisService');
 const newsService = require('./services/newsService');
@@ -9,7 +11,13 @@ const newsService = require('./services/newsService');
 const app = express();
 const port = process.env.PORT || 3001;
 
-
+app.use(promMid({
+  metricsPath: '/metrics',
+  collectDefaultMetrics: true,
+  requestDurationBuckets: [0.1, 0.5, 1, 1.5],
+  requestLengthBuckets: [512, 1024, 5120, 10240, 51200, 102400],
+  responseLengthBuckets: [512, 1024, 5120, 10240, 51200, 102400],
+}))
 app.use(xss());
 
 app.get('/', (req, res) => {
@@ -642,19 +650,6 @@ app.get("/api/news", async (req, res) => {
     res.json(response);
   } catch (error) {
     console.error('Fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch data' });
-  }
-})
-
-app.get("/api/publish", async (req, res) => {
-  // this endpoint actually fetches news data and writes to db
-  try {
-    await newsService.insertNews();
-    await sentimentAnalysisService.analyzeNews();
-    res.status(201)
-
-  } catch (error) {
-    console.error('Error inserting items:', error);
     res.status(500).json({ error: 'Failed to fetch data' });
   }
 })

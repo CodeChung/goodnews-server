@@ -17,15 +17,14 @@ const analyzeNews = async () => {
     let currentDate = new Date().toISOString().split('T')[0]
     const sqlGet = `SELECT * FROM news WHERE date = '${currentDate}'`;
     const articles = await pool.query(sqlGet);
+    console.log('analyze news articles', articles.rows[0])
     const analyzedArticles = []
     if (articles.rows?.length) {
         for (let i = 0; i < articles.rows.length; i++) {
             let { id, title } = articles.rows[i];
             id = id || 0;
             title = title || '';
-            console.log('id', id, title)
-            const score = getSentiment(title)
-            console.log('score', score)
+            const score = await getSentiment(title)
             analyzedArticles.push([id, score])
         }
     }

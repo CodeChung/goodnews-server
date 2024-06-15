@@ -1,3 +1,4 @@
+const sentimentAnalysisService = require('./sentimentAnalysisService');
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -48,6 +49,11 @@ const getNews = async (category) => {
     const sqlGet = `select title, url, imageurl, score from news left join scores on news.id = scores.news_id
     where category = '${category}' and date = '${currentDate}'`;
     const result = await pool.query(sqlGet);
+    if (result.rows.length == 0) {
+        await insertNews();
+        await sentimentAnalysisService.analyzeNews();
+        return getNews(category);
+    }
     return result;
 }
 
