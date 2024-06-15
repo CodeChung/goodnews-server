@@ -46,7 +46,7 @@ describe('newsService', () => {
             )
             await insertNews();
 
-            expect(fetchMock).toHaveBeenCalledTimes(5);
+            expect(fetchMock).toHaveBeenCalledTimes(53);
             expect(pool.query).toHaveBeenCalled();
         });
     });
